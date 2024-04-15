@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -8,7 +9,9 @@ using Dan.Common.Exceptions;
 using Dan.Common.Interfaces;
 using Dan.Common.Models;
 using Dan.Common.Util;
-using Dan.Plugin.DATASOURCENAME.Models;
+using Dan.Plugin.Patentstyret.Config;
+using Dan.Plugin.Patentstyret.Models;
+using Google.Protobuf;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -22,14 +25,7 @@ public class Plugin
     private readonly IEvidenceSourceMetadata _evidenceSourceMetadata;
     private readonly ILogger _logger;
     private readonly HttpClient _client;
-    private readonly Settings _settings;
-
-    // The datasets must supply a human-readable source description from which they originate. Individual fields might come from different sources, and this string should reflect that (ie. name all possible sources).
-    public const string SourceName = "Digitaliseringsdirektoratet";
-
-    // The function names (ie. HTTP endpoint names) and the dataset names must match. Using constants to avoid errors.
-    public const string SimpleDatasetName = "SimpleDataset";
-    public const string RichDatasetName = "RichDataset";
+    private readonly ApplicationSettings _settings;
 
     // These are not mandatory, but there should be a distinct error code (any integer) for all types of errors that can occur. The error codes does not have to be globally
     // unique. These should be used within either transient or permanent exceptions, see Plugin.cs for examples.
@@ -39,74 +35,31 @@ public class Plugin
     private const int ERROR_UNABLE_TO_PARSE_RESPONSE = 1004;
 
     public Plugin(
-        IHttpClientFactory httpClientFactory,
-        ILoggerFactory loggerFactory,
-        IOptions<Settings> settings,
-        IEvidenceSourceMetadata evidenceSourceMetadata)
+        IHttpClientFactory httpClientFactory, ILoggerFactory loggerFactory, IOptions<ApplicationSettings> settings, IEvidenceSourceMetadata evidenceSourceMetadata)
     {
         _client = httpClientFactory.CreateClient(Constants.SafeHttpClient);
         _logger = loggerFactory.CreateLogger<Plugin>();
         _settings = settings.Value;
         _evidenceSourceMetadata = evidenceSourceMetadata;
-
-        _logger.LogDebug("Initialized plugin! This should be visible in the console");
     }
 
-    [Function(SimpleDatasetName)]
-    public async Task<HttpResponseData> GetSimpleDatasetAsync(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
-        FunctionContext context)
-    {
-
-        _logger.LogDebug("debug HERE");
-        _logger.LogWarning("warning HERE");
-        _logger.LogError("error HERE");
-
-        var evidenceHarvesterRequest = await req.ReadFromJsonAsync<EvidenceHarvesterRequest>();
-
-        return await EvidenceSourceResponse.CreateResponse(req,
-            () => GetEvidenceValuesSimpledataset(evidenceHarvesterRequest));
-    }
-
-    [Function(RichDatasetName)]
-    public async Task<HttpResponseData> GetRichDatasetAsync(
+    [Function("Varemerker")]
+    public async Task<HttpResponseData> Varemerker(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
         FunctionContext context)
     {
         var evidenceHarvesterRequest = await req.ReadFromJsonAsync<EvidenceHarvesterRequest>();
 
-        return await EvidenceSourceResponse.CreateResponse(req,
-            () => GetEvidenceValuesRichDataset(evidenceHarvesterRequest));
+        return await EvidenceSourceResponse.CreateResponse(req, () => GetEvidenceValuesSimpledataset(evidenceHarvesterRequest));
     }
 
     private async Task<List<EvidenceValue>> GetEvidenceValuesSimpledataset(EvidenceHarvesterRequest evidenceHarvesterRequest)
     {
-        var url = _settings.EndpointUrl + "?someparameter=" + evidenceHarvesterRequest.OrganizationNumber;
-        var exampleModel = await MakeRequest<ExampleModel>(url);
+        var url = _settings.PatentUrl + "register/IprCasesByCompany?companyNumber=" + evidenceHarvesterRequest.OrganizationNumber;
+        var result = await MakeRequest<ExternalModel>(url);
 
-        var ecb = new EvidenceBuilder(_evidenceSourceMetadata, SimpleDatasetName);
-        ecb.AddEvidenceValue("field1", exampleModel.ResponseField1, SourceName);
-        ecb.AddEvidenceValue("field2", exampleModel.ResponseField2, SourceName);
-
-        return ecb.GetEvidenceValues();
-    }
-
-    private async Task<List<EvidenceValue>> GetEvidenceValuesRichDataset(EvidenceHarvesterRequest evidenceHarvesterRequest)
-    {
-
-        var url = _settings.EndpointUrl + "?someparameter=" + evidenceHarvesterRequest.OrganizationNumber;
-        var exampleModel = await MakeRequest<ExampleModel>(url);
-
-        var ecb = new EvidenceBuilder(_evidenceSourceMetadata, RichDatasetName);
-
-        // Here we reserialize the model. While it is possible to merely send the received JSON string directly through without parsing it,
-        // the extra step of deserializing it to a known model ensures that the JSON schema supplied in the metadata always matches the
-        // dataset model.
-        //
-        // Another way to do this is to not generate the schema from the model, but "hand code" the schema in the metadata and validate the
-        // received JSON against it, throwing eg. a EvidenceSourcePermanentServerException if it fails to match.
-        ecb.AddEvidenceValue("default", JsonConvert.SerializeObject(exampleModel), SourceName);
-
+        var ecb = new EvidenceBuilder(_evidenceSourceMetadata, "Varemerker");
+        ecb.AddEvidenceValue("default", JsonConvert.SerializeObject(result), _evidenceSourceMetadata.GetEvidenceCodes().Where(x=>x.EvidenceCodeName == "Varemerker").First().EvidenceSource, false);
         return ecb.GetEvidenceValues();
     }
 
@@ -116,6 +69,7 @@ public class Plugin
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Get, target);
+            request.Headers.TryAddWithoutValidation("ocp-apim-subscription-key", _settings.ApiKey);
             result = await _client.SendAsync(request);
         }
         catch (HttpRequestException ex)

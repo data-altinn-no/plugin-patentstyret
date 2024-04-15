@@ -1,6 +1,7 @@
 using Dan.Plugin.DATASOURCENAME;
 using Microsoft.Extensions.Hosting;
 using Dan.Common.Extensions;
+using Dan.Plugin.Patentstyret.Config;
 using Microsoft.Extensions.DependencyInjection;
 
 var host = new HostBuilder()
@@ -16,7 +17,7 @@ var host = new HostBuilder()
 
         // This makes IOption<Settings> available in the DI container.
         var configurationRoot = context.Configuration;
-        services.Configure<Settings>(configurationRoot);
+        services.Configure<ApplicationSettings>(configurationRoot);
     })
     .Build();
 

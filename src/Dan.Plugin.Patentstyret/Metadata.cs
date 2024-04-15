@@ -1,14 +1,19 @@
-using System.Collections.Generic;
-using System.Net;
-using System.Threading.Tasks;
 using Dan.Common;
 using Dan.Common.Enums;
 using Dan.Common.Interfaces;
 using Dan.Common.Models;
-using Dan.Plugin.DATASOURCENAME.Models;
+using Dan.Plugin.Patentstyret.Models;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
+using Newtonsoft.Json.Schema;
 using Newtonsoft.Json.Schema.Generation;
+using System.Collections.Generic;
+using System.Net;
+using System.Threading.Tasks;
+using NJsonSchema;
+using Newtonsoft.Json;
+using Polly.Caching.Serialization.Json;
+using JsonSchema = NJsonSchema.JsonSchema;
 
 namespace Dan.Plugin.DATASOURCENAME;
 
@@ -17,53 +22,24 @@ namespace Dan.Plugin.DATASOURCENAME;
 /// </summary>
 public class Metadata : IEvidenceSourceMetadata
 {
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
+    public const string Source = "Patenstyret";
+
     public List<EvidenceCode> GetEvidenceCodes()
     {
         JSchemaGenerator generator = new JSchemaGenerator();
-
         return new List<EvidenceCode>()
         {
             new()
             {
-                EvidenceCodeName = global::Dan.Plugin.DATASOURCENAME.Plugin.SimpleDatasetName,
-                EvidenceSource = global::Dan.Plugin.DATASOURCENAME.Plugin.SourceName,
+                EvidenceCodeName = "Varemerker",
+                EvidenceSource = Source,
                 Values = new List<EvidenceValue>()
                 {
                     new()
                     {
-                        EvidenceValueName = "field1",
-                        ValueType = EvidenceValueType.String
-                    },
-                    new()
-                    {
-                        EvidenceValueName = "field2",
-                        ValueType = EvidenceValueType.String
-                    }
-                }
-            },
-            new()
-            {
-                EvidenceCodeName = global::Dan.Plugin.DATASOURCENAME.Plugin.RichDatasetName,
-                EvidenceSource = global::Dan.Plugin.DATASOURCENAME.Plugin.SourceName,
-                Values = new List<EvidenceValue>()
-                {
-                    new()
-                    {
-                        // Convention for rich datasets with a single JSON model is to use the value name "default"
                         EvidenceValueName = "default",
                         ValueType = EvidenceValueType.JsonSchema,
-                        JsonSchemaDefintion =  generator.Generate(typeof(ExampleModel)).ToString()
-                    }
-                },
-                AuthorizationRequirements = new List<Requirement>
-                {
-                    new MaskinportenScopeRequirement
-                    {
-                        RequiredScopes = new List<string> { "altinn:dataaltinnno/somescope" }
+                        JsonSchemaDefintion =  JsonSchema.FromType<PatentExternal>().ToJson(Formatting.None),
                     }
                 }
             }
