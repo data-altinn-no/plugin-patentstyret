@@ -21,4 +21,7 @@
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Repos\plugin-patentstyret\src\Dan.Plugin.Patentstyret\Models\.editorconfig" />
+  </ItemGroup>
 </Project>

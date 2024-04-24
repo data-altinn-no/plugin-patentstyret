@@ -22,7 +22,8 @@ namespace Dan.Plugin.DATASOURCENAME;
 /// </summary>
 public class Metadata : IEvidenceSourceMetadata
 {
-    public const string Source = "Patenstyret";
+    public const string SOURCE = "Patentstyret";
+    private const string CONTEXT_DUE = "eDueDiligence";
 
     public List<EvidenceCode> GetEvidenceCodes()
     {
@@ -32,14 +33,15 @@ public class Metadata : IEvidenceSourceMetadata
             new()
             {
                 EvidenceCodeName = "Varemerker",
-                EvidenceSource = Source,
+                EvidenceSource = SOURCE,
+                BelongsToServiceContexts = new List<string>() { CONTEXT_DUE },
                 Values = new List<EvidenceValue>()
                 {
                     new()
                     {
                         EvidenceValueName = "default",
                         ValueType = EvidenceValueType.JsonSchema,
-                        JsonSchemaDefintion =  JsonSchema.FromType<PatentExternal>().ToJson(Formatting.None),
+                        JsonSchemaDefintion =  JsonSchema.FromType<Patents>().ToJson(Formatting.None),
                     }
                 }
             }

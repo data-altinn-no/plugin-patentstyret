@@ -1,4 +1,5 @@
 
+using System;
 using System.Collections.Generic;
 
 
@@ -7,7 +8,7 @@ namespace Dan.Plugin.Patentstyret.Models
 
     public class PatentModel
     {
-        public object partyIdentifier { get; set; }
+        public string partyIdentifier { get; set; }
         public string applicantName { get; set; }
         public int trademarkBagCount { get; set; }
         public int patentBagCount { get; set; }
@@ -25,6 +26,8 @@ namespace Dan.Plugin.Patentstyret.Models
         public string image { get; set; }
         public string currentStatusNo { get; set; }
         public string currentStatusEn { get; set; }
+
+        public DateTime currentStatusDate { get; set; }
         public List<string> applicantBag { get; set; }
         public List<string> ownerBag { get; set; }
         public string caseUrl { get; set; }
@@ -37,6 +40,9 @@ namespace Dan.Plugin.Patentstyret.Models
         public string applicationNumber { get; set; }
         public object image { get; set; }
         public string currentStatusNo { get; set; }
+
+        public DateTime currentStatusDate { get; set; }
+
         public string currentStatusEn { get; set; }
         public List<string> applicantBag { get; set; }
         public List<string> ownerBag { get; set; }
@@ -51,6 +57,8 @@ namespace Dan.Plugin.Patentstyret.Models
         public string image { get; set; }
         public string currentStatusNo { get; set; }
         public string currentStatusEn { get; set; }
+
+        public DateTime currentStatusDate { get; set; }
         public List<string> applicantBag { get; set; }
         public List<string> ownerBag { get; set; }
         public string caseUrl { get; set; }

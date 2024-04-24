@@ -1,56 +1,64 @@
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 
 namespace Dan.Plugin.Patentstyret.Models
 {
+    [JsonObject("Patentstyret")]
+    public class Patents
+    {
+        [JsonProperty("varemerker")]
+        public List<ExternalModel> PatentsList { get; set; }
+    }
+
+
+
+    [JsonObject("varemerke")]
     public class ExternalModel
     {
-        public object partyIdentifier { get; set; }
-        public int trademarkBagCount { get; set; }
-        public int patentBagCount { get; set; }
-        public int designBagCount { get; set; }
-        public List<TrademarkExternal> trademarkBag { get; set; }
-        public List<PatentExternal> patentBag { get; set; }
-        public List<DesignExternal> designBag { get; set; }
+        [JsonProperty("partyIdentifier")]
+        public string PartyIdentifier { get; set; }
+
+        [JsonProperty("patentType")]
+        public PatentType Type { get; set; }
+
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        [JsonProperty("patentNumber")]
+        public string PatentNumber { get; set; }
+
+        [JsonProperty("applicationNumber")]
+        public string ApplicationNumber { get; set; }
+
+        [JsonProperty("designImage", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public string DesignImage { get; set; }
+
+        [JsonProperty("currentStatus")]
+        public string CurrentStatus { get; set; }
+
+        [JsonProperty("currentStatusChanged")]
+        public DateTime CurrentStatusChanged { get; set; }
+
+        [JsonProperty("expirationDate")]
+        public DateTime ExpirationDate { get; set; }
+
+        [JsonProperty("caseUrl")]
+        public string CaseUrl { get; set; }
     }
 
-    public class TrademarkExternal
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum PatentType
     {
-        public string registrationNumber { get; set; }
-        public string markVerbalElementText { get; set; }
-        public string applicationNumber { get; set; }
-        //public string image { get; set; }
-        /// public string currentStatusNo { get; set; }
-        public string currentStatusEn { get; set; }
-        public List<string> applicantBag { get; set; }
-        public List<string> ownerBag { get; set; }
-        public string caseUrl { get; set; }
-    }
-
-    public class PatentExternal
-    {
-        public string patentNumber { get; set; }
-        public string inventionTitle { get; set; }
-        public string applicationNumber { get; set; }
-       // public object image { get; set; }
-        //public string currentStatusNo { get; set; }
-        public string currentStatusEn { get; set; }
-        public List<string> applicantBag { get; set; }
-        public List<string> ownerBag { get; set; }
-        public string caseUrl { get; set; }
-    }
-
-    public class DesignExternal
-    {
-        public string registrationNumber { get; set; }
-        public string[] designTitleText { get; set; }
-        public string applicationNumber { get; set; }
-        //public string image { get; set; }
-        //public string currentStatusNo { get; set; }
-        public string currentStatusEn { get; set; }
-        public List<string> applicantBag { get; set; }
-        public List<string> ownerBag { get; set; }
-        public string caseUrl { get; set; }
+        [EnumMember(Value = "design")]
+        Design,
+        [EnumMember(Value = "varemerke")]
+        Trademark,
+        [EnumMember(Value = "patent")]
+        Patent
     }
 }

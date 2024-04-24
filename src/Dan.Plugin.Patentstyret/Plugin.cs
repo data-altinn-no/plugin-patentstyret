@@ -18,7 +18,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
-namespace Dan.Plugin.DATASOURCENAME;
+namespace Dan.Plugin.Patentstyret;
 
 public class Plugin
 {
@@ -55,12 +55,98 @@ public class Plugin
 
     private async Task<List<EvidenceValue>> GetEvidenceValuesSimpledataset(EvidenceHarvesterRequest evidenceHarvesterRequest)
     {
-        var url = _settings.PatentUrl + "register/IprCasesByCompany?companyNumber=" + evidenceHarvesterRequest.OrganizationNumber;
-        var result = await MakeRequest<ExternalModel>(url);
+        var url = _settings.PatentUrl + "register/IprCasesByCompany?companyNumber=" + evidenceHarvesterRequest.SubjectParty.NorwegianOrganizationNumber;
+
+        var patentResponse = await MakeRequest<PatentModel>(url);
+
+        //retrieve expiry dates for patents, trademarks and designs
+        var result = await GetDetailedInfo(patentResponse);
 
         var ecb = new EvidenceBuilder(_evidenceSourceMetadata, "Varemerker");
         ecb.AddEvidenceValue("default", JsonConvert.SerializeObject(result), _evidenceSourceMetadata.GetEvidenceCodes().Where(x=>x.EvidenceCodeName == "Varemerker").First().EvidenceSource, false);
         return ecb.GetEvidenceValues();
+    }
+
+    private ExternalModel ConvertToDanModel(PatentModel patentModel)
+    {
+        throw new NotImplementedException();
+        
+    }
+
+    private async Task<Patents> GetDetailedInfo(PatentModel patents)
+    {
+        var resultModel = new Patents()
+        {
+            PatentsList = new List<ExternalModel>()
+        };
+
+        foreach (var a in patents.designBag)
+        {
+            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Design.DesignApplication>(_settings.PatentUrl + $"register/Design/{a.applicationNumber}");
+
+            var design = new ExternalModel()
+                {
+                  ApplicationNumber = a.applicationNumber,
+                  CaseUrl = a.caseUrl,
+                  CurrentStatus = a.currentStatusEn,
+                  Type = PatentType.Design,
+                  CurrentStatusChanged = a.currentStatusDate,
+                  ExpirationDate = result.designApplication.designBag.design.Select(x => x.expiryDate).FirstOrDefault(),
+                  PartyIdentifier = patents.partyIdentifier,
+                  PatentNumber = a.registrationNumber,
+                  Description = string.Join(", ", a.designTitleText),
+                  DesignImage = a.image
+            };
+
+            resultModel.PatentsList.Add(design);
+            
+        }
+
+        foreach (var a in patents.trademarkBag)
+        {
+            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Trademark.TrademarkApplication>(_settings.PatentUrl + $"register/Trademark/{a.applicationNumber}");
+
+            var tm = new ExternalModel()
+                {
+                    ApplicationNumber = a.applicationNumber,
+                    CaseUrl = a.caseUrl,
+                    CurrentStatus = a.currentStatusEn,
+                    Type = PatentType.Trademark,
+                    CurrentStatusChanged =a.currentStatusDate,
+                    ExpirationDate = result.trademarkApplication.trademarkBag.trademark.Select(x => x.expiryDate).FirstOrDefault(),
+                    PartyIdentifier = patents.partyIdentifier,
+                    PatentNumber = a.registrationNumber,
+                    Description = a.markVerbalElementText,
+                    DesignImage = null
+                };
+
+            resultModel.PatentsList.Add(tm);
+            
+        }
+
+        foreach (var a in patents.patentBag)
+        {
+            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Patent.PatentApplication>(_settings.PatentUrl +
+                                                                                                    $"register/Patent/{a.applicationNumber}");
+
+            var tm = new ExternalModel()
+            {
+                ApplicationNumber = a.applicationNumber,
+                CaseUrl = a.caseUrl,
+                CurrentStatus = a.currentStatusEn,
+                Type = PatentType.Patent,
+                CurrentStatusChanged = a.currentStatusDate,
+                ExpirationDate = result.bibliographicData.maximumDurationDate,
+                PartyIdentifier = patents.partyIdentifier,
+                PatentNumber = result.bibliographicData.patentGrantIdentification.patentNumber,
+                Description = a.inventionTitle,
+                DesignImage = null
+            };
+
+            resultModel.PatentsList.Add(tm);
+        }
+
+        return resultModel;
     }
 
     private async Task<T> MakeRequest<T>(string target)
@@ -74,11 +160,13 @@ public class Plugin
         }
         catch (HttpRequestException ex)
         {
+            _logger.LogError("Unable to parse data returned from upstream source ({target}: {exceptionType}: {exceptionMessage}", target, ex.GetType().Name, ex.Message);
             throw new EvidenceSourceTransientException(ERROR_UPSTREAM_UNAVAILBLE, "Error communicating with upstream source", ex);
         }
 
         if (!result.IsSuccessStatusCode)
         {
+            _logger.LogError($"Patentstyret error getting uri {target}, resultcode {result.StatusCode}");
             throw result.StatusCode switch
             {
                 HttpStatusCode.NotFound => new EvidenceSourcePermanentClientException(ERROR_NOT_FOUND, "Upstream source could not find the requested entity (404)"),
