@@ -50,12 +50,12 @@ public class Plugin
     {
         var evidenceHarvesterRequest = await req.ReadFromJsonAsync<EvidenceHarvesterRequest>();
 
-        return await EvidenceSourceResponse.CreateResponse(req, () => GetEvidenceValuesSimpledataset(evidenceHarvesterRequest));
+        return await EvidenceSourceResponse.CreateResponse(req, () => GetVaremerker(evidenceHarvesterRequest));
     }
 
-    private async Task<List<EvidenceValue>> GetEvidenceValuesSimpledataset(EvidenceHarvesterRequest evidenceHarvesterRequest)
+    private async Task<List<EvidenceValue>> GetVaremerker(EvidenceHarvesterRequest evidenceHarvesterRequest)
     {
-        var url = _settings.PatentUrl + "register/IprCasesByCompany?companyNumber=" + evidenceHarvesterRequest.SubjectParty.NorwegianOrganizationNumber;
+        var url = _settings.PatentUrl + "register/v1/IprCasesByCompany?companyNumber=" + evidenceHarvesterRequest.SubjectParty.NorwegianOrganizationNumber;
 
         var patentResponse = await MakeRequest<PatentModel>(url);
 
@@ -67,22 +67,17 @@ public class Plugin
         return ecb.GetEvidenceValues();
     }
 
-    private ExternalModel ConvertToDanModel(PatentModel patentModel)
-    {
-        throw new NotImplementedException();
-        
-    }
-
     private async Task<Patents> GetDetailedInfo(PatentModel patents)
     {
         var resultModel = new Patents()
         {
-            PatentsList = new List<ExternalModel>()
+            PatentsList = new List<ExternalModel>(),
+            PartyIdentifier = patents.partyIdentifier
         };
 
         foreach (var a in patents.designBag)
         {
-            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Design.DesignApplication>(_settings.PatentUrl + $"register/Design/{a.applicationNumber}");
+           // var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Design.DesignApplication>(_settings.PatentUrl + $"register/Design/{a.applicationNumber}");
 
             var design = new ExternalModel()
                 {
@@ -91,8 +86,7 @@ public class Plugin
                   CurrentStatus = a.currentStatusEn,
                   Type = PatentType.Design,
                   CurrentStatusChanged = a.currentStatusDate,
-                  ExpirationDate = result.designApplication.designBag.design.Select(x => x.expiryDate).FirstOrDefault(),
-                  PartyIdentifier = patents.partyIdentifier,
+                  ExpirationDate = a.expiryDate,
                   PatentNumber = a.registrationNumber,
                   Description = string.Join(", ", a.designTitleText),
                   DesignImage = a.image
@@ -104,7 +98,7 @@ public class Plugin
 
         foreach (var a in patents.trademarkBag)
         {
-            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Trademark.TrademarkApplication>(_settings.PatentUrl + $"register/Trademark/{a.applicationNumber}");
+           // var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Trademark.TrademarkApplication>(_settings.PatentUrl + $"register/Trademark/{a.applicationNumber}");
 
             var tm = new ExternalModel()
                 {
@@ -113,8 +107,7 @@ public class Plugin
                     CurrentStatus = a.currentStatusEn,
                     Type = PatentType.Trademark,
                     CurrentStatusChanged =a.currentStatusDate,
-                    ExpirationDate = result.trademarkApplication.trademarkBag.trademark.Select(x => x.expiryDate).FirstOrDefault(),
-                    PartyIdentifier = patents.partyIdentifier,
+                    ExpirationDate = a.expiryDate,
                     PatentNumber = a.registrationNumber,
                     Description = a.markVerbalElementText,
                     DesignImage = null
@@ -126,8 +119,7 @@ public class Plugin
 
         foreach (var a in patents.patentBag)
         {
-            var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Patent.PatentApplication>(_settings.PatentUrl +
-                                                                                                    $"register/Patent/{a.applicationNumber}");
+            //var result = await MakeRequest<Dan.Plugin.Patentstyret.Models.Patent.PatentApplication>(_settings.PatentUrl + $"register/Patent/{a.applicationNumber}");
 
             var tm = new ExternalModel()
             {
@@ -136,9 +128,8 @@ public class Plugin
                 CurrentStatus = a.currentStatusEn,
                 Type = PatentType.Patent,
                 CurrentStatusChanged = a.currentStatusDate,
-                ExpirationDate = result.bibliographicData.maximumDurationDate,
-                PartyIdentifier = patents.partyIdentifier,
-                PatentNumber = result.bibliographicData.patentGrantIdentification.patentNumber,
+                ExpirationDate = a.expiryDate,
+                PatentNumber = a.patentNumber,
                 Description = a.inventionTitle,
                 DesignImage = null
             };
@@ -177,7 +168,8 @@ public class Plugin
 
         try
         {
-            return JsonConvert.DeserializeObject<T>(await result.Content.ReadAsStringAsync());
+            var body = await result.Content.ReadAsStringAsync();
+            return JsonConvert.DeserializeObject<T>(body);
         }
         catch (Exception ex)
         {

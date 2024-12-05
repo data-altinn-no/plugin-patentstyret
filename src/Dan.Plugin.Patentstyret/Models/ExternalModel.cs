@@ -8,10 +8,13 @@ using System.Runtime.Serialization;
 
 namespace Dan.Plugin.Patentstyret.Models
 {
-    [JsonObject("Patentstyret")]
+    [JsonObject("patentstyret")]
     public class Patents
     {
-        [JsonProperty("varemerker")]
+        [JsonProperty("partyIdentifier")]
+        public string PartyIdentifier { get; set; }
+
+        [JsonProperty("immaterialRights")]
         public List<ExternalModel> PatentsList { get; set; }
     }
 
@@ -20,10 +23,7 @@ namespace Dan.Plugin.Patentstyret.Models
     [JsonObject("varemerke")]
     public class ExternalModel
     {
-        [JsonProperty("partyIdentifier")]
-        public string PartyIdentifier { get; set; }
-
-        [JsonProperty("patentType")]
+        [JsonProperty("immaterialRightType")]
         public PatentType Type { get; set; }
 
         [JsonProperty("description")]
