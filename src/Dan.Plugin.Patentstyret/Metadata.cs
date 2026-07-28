@@ -41,7 +41,7 @@ public class Metadata : IEvidenceSourceMetadata
                     {
                         EvidenceValueName = "default",
                         ValueType = EvidenceValueType.JsonSchema,
-                        JsonSchemaDefintion =  JsonSchema.FromType<Patents>().ToJson(Formatting.None),
+                        JsonSchemaDefintion =  EvidenceValue.SchemaFromObject<Patents>(Formatting.None)
                     }
                 }
             }
