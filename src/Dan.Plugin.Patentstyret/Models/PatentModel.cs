@@ -27,11 +27,11 @@ namespace Dan.Plugin.Patentstyret.Models
         public string currentStatusNo { get; set; }
         public string currentStatusEn { get; set; }
 
-        public DateTime currentStatusDate { get; set; }
+        public DateTime? currentStatusDate { get; set; }
         public List<GenericBag> applicantBag { get; set; }
         public List<GenericBag> ownerBag { get; set; }
         public string caseUrl { get; set; }
-        public DateTime expiryDate { get; set; }
+        public DateTime? expiryDate { get; set; }
     }
 
     public class Patentbag
@@ -42,13 +42,13 @@ namespace Dan.Plugin.Patentstyret.Models
         public object image { get; set; }
         public string currentStatusNo { get; set; }
 
-        public DateTime currentStatusDate { get; set; }
+        public DateTime? currentStatusDate { get; set; }
 
         public string currentStatusEn { get; set; }
         public List<GenericBag> applicantBag { get; set; }
         public List<GenericBag> ownerBag { get; set; }
         public string caseUrl { get; set; }
-        public DateTime expiryDate { get; set; }
+        public DateTime? expiryDate { get; set; }
     }
 
     public class Designbag
@@ -60,12 +60,12 @@ namespace Dan.Plugin.Patentstyret.Models
         public string currentStatusNo { get; set; }
         public string currentStatusEn { get; set; }
 
-        public DateTime currentStatusDate { get; set; }
+        public DateTime? currentStatusDate { get; set; }
         public List<GenericBag> applicantBag { get; set; }
         public List<GenericBag> ownerBag { get; set; }
         public string caseUrl { get; set; }
 
-        public DateTime expiryDate { get; set; }
+        public DateTime? expiryDate { get; set; }
     }
 
     public class GenericBag
