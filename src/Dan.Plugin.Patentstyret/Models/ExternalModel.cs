@@ -42,10 +42,10 @@ namespace Dan.Plugin.Patentstyret.Models
         public string CurrentStatus { get; set; }
 
         [JsonProperty("currentStatusChanged")]
-        public DateTime CurrentStatusChanged { get; set; }
+        public DateTime? CurrentStatusChanged { get; set; }
 
         [JsonProperty("expirationDate")]
-        public DateTime ExpirationDate { get; set; }
+        public DateTime? ExpirationDate { get; set; }
 
         [JsonProperty("caseUrl")]
         public string CaseUrl { get; set; }
